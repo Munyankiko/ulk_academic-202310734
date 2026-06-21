@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ULK Performance Dashboard — Indexed vs Non-Indexed</title>
+<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="grid-bg"></div>
+
+<header class="topbar">
+  <div class="topbar-left">
+    <span class="logo-mark">ULK</span>
+    <div class="topbar-title">
+      <h1>Performance Dashboard</h1>
+      <p>Indexed vs. Non-Indexed Database Benchmark</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="status-dot" id="connStatus"></span>
+    <span id="connText">Connecting…</span>
+  </div>
+</header>
+
+<main class="layout">
+
+  <!-- ===================== STATS ROW ===================== -->
+  <section class="stats-row">
+    <div class="stat-card indexed">
+      <span class="stat-eyebrow">students_indexed</span>
+      <span class="stat-number" id="statIndexedTotal">—</span>
+      <span class="stat-label">total records</span>
+      <div class="stat-foot">
+        <span id="statIndexedSize">—</span>
+        <span class="pill pill-green" id="statIndexedIdx">— indexes</span>
+      </div>
+    </div>
+
+    <div class="stat-vs">VS</div>
+
+    <div class="stat-card noindex">
+      <span class="stat-eyebrow">students_no_index</span>
+      <span class="stat-number" id="statNoIndexTotal">—</span>
+      <span class="stat-label">total records</span>
+      <div class="stat-foot">
+        <span id="statNoIndexSize">—</span>
+        <span class="pill pill-red">0 indexes</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== COMPARE PANEL ===================== -->
+  <section class="panel compare-panel">
+    <div class="panel-head">
+      <h2>Race the query</h2>
+      <p>Run the identical search on both tables simultaneously and watch the execution time gap.</p>
+    </div>
+
+    <form id="compareForm" class="search-form">
+      <select id="compareField" name="field">
+        <option value="email">email</option>
+        <option value="reg_number">reg_number</option>
+        <option value="id">id</option>
+        <option value="full_name">full_name</option>
+        <option value="department">department</option>
+      </select>
+      <input type="text" id="compareQuery" placeholder="e.g. student2500000@ulk.ac.rw" autocomplete="off">
+      <button type="submit" class="btn-primary">Run comparison</button>
+    </form>
+
+    <div class="race-track" id="raceTrack" hidden>
+      <div class="race-lane">
+        <div class="race-lane-head">
+          <span class="lane-tag tag-red">students_no_index</span>
+          <span class="lane-time" id="raceNoIndexTime">— ms</span>
+        </div>
+        <div class="race-bar-track">
+          <div class="race-bar bar-red" id="raceNoIndexBar"></div>
+        </div>
+        <span class="lane-meta" id="raceNoIndexMeta">—</span>
+      </div>
+
+      <div class="race-lane">
+        <div class="race-lane-head">
+          <span class="lane-tag tag-green">students_indexed</span>
+          <span class="lane-time" id="raceIndexedTime">— ms</span>
+        </div>
+        <div class="race-bar-track">
+          <div class="race-bar bar-green" id="raceIndexedBar"></div>
+        </div>
+        <span class="lane-meta" id="raceIndexedMeta">—</span>
+      </div>
+    </div>
+
+    <div class="speedup-banner" id="speedupBanner" hidden>
+      <span class="speedup-number" id="speedupNumber">—</span>
+      <span class="speedup-label">faster with the index</span>
+    </div>
+  </section>
+
+  <!-- ===================== SEARCH / MANAGE PANEL ===================== -->
+  <section class="panel manage-panel">
+    <div class="panel-head">
+      <h2>Search &amp; manage records</h2>
+      <p>Look up a record in either table, then update or delete it directly.</p>
+    </div>
+
+    <form id="searchForm" class="search-form">
+      <select id="searchTable" name="table">
+        <option value="indexed">students_indexed</option>
+        <option value="noindex">students_no_index</option>
+      </select>
+      <select id="searchField" name="field">
+        <option value="email">email</option>
+        <option value="reg_number">reg_number</option>
+        <option value="id">id</option>
+        <option value="full_name">full_name</option>
+        <option value="department">department</option>
+      </select>
+      <input type="text" id="searchQuery" placeholder="Search value…" autocomplete="off">
+      <button type="submit" class="btn-primary">Search</button>
+    </form>
+
+    <div class="search-meta" id="searchMeta"></div>
+
+    <div class="table-wrap">
+      <table id="resultsTable">
+        <thead>
+          <tr>
+            <th>ID</th><th>Full name</th><th>Email</th><th>Department</th><th>Reg. number</th><th>GPA</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="resultsBody">
+          <tr class="empty-row"><td colspan="7">Run a search to see records here.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===================== EDIT MODAL ===================== -->
+<div class="modal-overlay" id="editOverlay" hidden>
+  <div class="modal">
+    <h3>Edit record <span id="editId"></span></h3>
+    <input type="hidden" id="editTable">
+    <label>Full name<input type="text" id="editFullName"></label>
+    <label>Email<input type="text" id="editEmail"></label>
+    <label>Department<input type="text" id="editDepartment"></label>
+    <label>GPA<input type="number" step="0.01" min="0" max="4" id="editGpa"></label>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="editCancel">Cancel</button>
+      <button class="btn-primary" id="editSave">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>
